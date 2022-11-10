@@ -1,13 +1,25 @@
 import mesa
 import random
 
+class Basura(mesa.Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.cantidad = True
+        self.wealth = 1
+        
+    def step(self):
+        count = 0
+        count += 1
+
 class Aspiradora(mesa.Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
         self.wealth = 1
     
     def move(self):
-        possible_steps = self.model.grid.get_neighborhood(self.pos, moore = True, include_center = False)
+        possible_steps = self.model.grid.get_neighborhood(
+            self.pos, moore = True, include_center = False
+        )
         new_pos = self.random.choice(possible_steps)
         self.model.grid.move_agent(self,new_pos)
         
@@ -17,21 +29,10 @@ class Aspiradora(mesa.Agent):
         
         cell = self.model.grid.get_cell_list_contents([self.pos])
         for i in cell:
-            if type(i) == Basura and i.numb == True:
+            if type(i) == Basura and i.cantidad == True:
                 self.model.grid.remove_agent(i)
                 self.wealth += 1
-
-class Basura(mesa.Agent):
-    def __init__(self, unique_id, model):
-        super().__init__(unique_id, model)
-        self.numb = True
-        self.wealth = 1
-        
-    def step(self):
-        count = 0
-        count += 1
-
-
+                
 def compute_gini(model):
     agent_wealths = [agent.wealth for agent in model.schedule.agents]
     x = sorted(agent_wealths)
@@ -39,7 +40,7 @@ def compute_gini(model):
     B = sum(xi * (N - i) for i, xi in enumerate(x)) / (N * sum(x))
     return 1 + (1 / N) - 2 * B
 
-class Ambiente(mesa.Model):
+class Modelo(mesa.Model):
     def __init__(self, N, T):
         self.num = N
         self.num2 = T
@@ -61,7 +62,9 @@ class Ambiente(mesa.Model):
         self.datacollector = mesa.DataCollector(
             model_reporters={"Gini": compute_gini}, agent_reporters={"Wealth": "wealth"}
         )
-             
+        
+            
+            
     def step(self):
         self.datacollector.collect(self)
         self.schedule.step()
@@ -83,15 +86,17 @@ def agent_port(agent):
     else:
         portrayal["Color"] = "orange"
         
-    if type(agent) == Basura and agent.numb != True:
+    if type(agent) == Basura and agent.cantidad != True:
         portrayal["Color"] = "red"
 
 
     return portrayal
 
-tabla = mesa.visualization.ChartModule([{"Label": "Gini Graph","Color": "Red"}],data_collector_name='datacollector')
 grid = mesa.visualization.CanvasGrid(agent_port, 10,10,650,650)
-server = mesa.visualization.ModularServer(Ambiente, [grid, tabla], "Limpieza",{"N":5, "T": 10} )
+tabla = mesa.visualization.ChartModule([{"Label": "Gini","Color": "Red"}],data_collector_name='datacollector')
+server = mesa.visualization.ModularServer(
+    Modelo, [grid, tabla], "Limpieza",{"N":5, "T": 10}
+)
 
 server.port = 8522
 
